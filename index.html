@@ -1,0 +1,227 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="author" content="zyx">
+<title>gameIndex</title>
+<script type="text/javascript" src="js/jquery.js"></script>
+<style type="text/css">
+body {
+	background-color: black;
+}
+
+.bodyShell {
+	height: 375px;
+	width: 600px;
+	margin-left: 30%;
+	margin-top: 20%;
+	overflow: hidden;
+	background: url(images/bg1.gif) 0% 0% / 100% 100% no-repeat;
+}
+
+.safePlace {
+	height: 300px;
+	position: relative;
+}
+
+#role {
+	width: 105px;
+	height: 45px;
+	position: absolute;
+	z-index: 50;
+	bottom: -6px;
+}
+
+.diePlace {
+	height: 75px;
+	width: 600px;
+	position: relative;
+	z-index: 100;
+}
+.diePlace div {
+	float: left;
+	height: 100%;
+}
+.road {
+	background: url(images/road.png);
+	border-radius: 10px 10px 0 0;
+}
+
+.controlBody {
+	height: 50px;
+	width: 600px;
+	margin-left: 30%;
+	background-color: gray;
+	text-align: center;
+}
+.controlBody input {
+	height: 30px;
+	width: 50px;
+	margin-top: 10px;
+}
+</style>
+</head>
+<body>
+	<audio id="playMusic" src="music/playMusic.mp3">你的浏览器不支持</audio>
+	<audio id="jumpMusic" src="music/jumpMusic.mp3">你的浏览器不支持</audio>
+	<audio id="dieMusic" src="music/dieMusic.mp3">你的浏览器不支持</audio>
+	<div class="bodyShell">
+		<div class="safePlace">
+			<span style="color:#ffffff;float:right;margin-right:5px;">积分：<span id="integral">0</span></span>
+			<img id="role" src="images/role1.gif" />
+		</div>
+		<div class="diePlace">
+			<div class="road" style="width:540px;"></div>
+			<div class="sy" style="width:60px;"></div>
+		</div>
+	</div>
+	<div class="controlBody">
+		<input type="button" value="开始" onclick="begin(this)" />
+		<input type="button" value="重置" onclick="location.reload();" />
+	</div>
+</body>
+<script type="text/javascript">
+	/**初始化开始**/
+	//积分
+	var integral = 0;
+	//开始走
+	var gameBeginTimer = null;
+	//背景图片变更
+	var bgNum = 2;
+	var bgImgChangeTimer = null;
+	
+	//开始
+	function begin(par) {
+		$("#playMusic")[0].play();
+		
+		gameBeginTimer = setInterval("floorNarrow()", 20);//1秒缩掉50px
+		
+		bgImgChangeTimer = setInterval(function() {
+			$(".bodyShell").css("background", "url(images/bg" + bgNum + ".gif) 0% 0% / 100% 100% no-repeat");
+			bgNum ++;
+			if (bgNum == 4) {
+				bgNum = 1;
+			}
+		}, 5000);
+		
+		$(par).val("暂停");
+		$(par).attr("onclick", "stop(this)");
+	}
+	
+	//暂停
+	function stop(par) {
+		$("#playMusic")[0].pause();
+		clearInterval(gameBeginTimer);
+		clearInterval(bgImgChangeTimer);
+		
+		$(par).val("开始");
+		$(par).attr("onclick", "begin(this)");
+	}
+	/**初始化结束**/
+	
+	
+	
+	/**角色行为开始**/
+	$(document).keydown(function(event) {
+		if (event.keyCode == 38) {
+			jump();
+		}
+	});
+	
+	//跳跃
+	function jump() {
+		var bottom = $("#role").css("bottom");
+		if (bottom == "-6px") {//处于平地，可跳跃
+			$("#jumpMusic")[0].play();
+			up();
+		}
+	}
+	
+	//上升
+	function up() {
+		var bottom = "";
+		var up = setInterval(function() {
+			bottom = $("#role").css("bottom");
+			if (bottom == "45px") {
+				clearInterval(up);
+				down();
+			} else {
+				$("#role").css("bottom", "+=1");
+			}
+		}, 20);
+	}
+	
+	//下降
+	function down() {
+		var bottom = "";
+		var down = setInterval(function() {
+			bottom = $("#role").css("bottom");
+			if (bottom == "-6px") {
+				clearInterval(down);
+			} else {
+				$("#role").css("bottom", "-=1");
+			}
+		}, 20);
+	}
+	/**角色行为结束**/
+	
+	
+	
+	/**地板状态开始**/
+	//创建地板,随机创建60-400范围内的地板和60px深渊
+	function createFloor() {//Math.floor(Math.random()*(max-min+1)+min);
+		var floorWidth = Math.floor(Math.random() * 341 + 60);//60~400
+		var floorHtml = "<div class='road' style='width:" + floorWidth + "px;'></div>";
+		floorHtml += "<div class='sy' style='width:60px;'></div>";
+		$(".diePlace").css("width", "+=" + (floorWidth + 60));
+		$(".diePlace").append(floorHtml);
+	}
+	
+	//地板缩小1px
+	function floorNarrow() {
+		if ($("#role").css("bottom") == "-6px") {
+			if ($(".diePlace").find("div:eq(0)").attr("class") == "sy") {
+				if (parseInt($(".diePlace").find("div:eq(0)").css("width").replace("px", "")) > 51) {
+					clearInterval(gameBeginTimer);
+					clearInterval(bgImgChangeTimer);
+					$("#playMusic")[0].pause();
+					$("#dieMusic")[0].play();
+					alert("Game Over!");
+					return;
+				}
+			} else {
+				if (parseInt($(".diePlace").find("div:eq(0)").css("width").replace("px", "")) < 47) {
+					clearInterval(gameBeginTimer);
+					clearInterval(bgImgChangeTimer);
+					$("#playMusic")[0].pause();
+					$("#dieMusic")[0].play();
+					alert("Game Over!");
+					return;
+				}
+			}
+		}
+		
+		var floors = $(".diePlace").find("div");
+		var floorsWidth = 0;
+		for (var i = 0;i < floors.length;i++) {
+			floorsWidth += parseInt($(".diePlace").find("div").eq(i).css("width").replace("px", ""));
+		}
+		if (floorsWidth <= 600) {//地板不够，创建地板
+			createFloor();
+		}
+		
+		$(".diePlace").find("div:eq(0)").css("width", "-=1");
+		if (parseInt($(".diePlace").find("div:eq(0)").css("width").replace("px", "")) <= 0) {
+			if ($(".diePlace").find("div:eq(0)").attr("class") != "sy") {
+				integral ++;
+				$("#integral").text(integral);
+			}
+			//地板缩完后移除
+			$(".diePlace").find("div:eq(0)").remove();
+		}
+	}
+	/**地板状态结束**/
+</script>
+</html>
